@@ -1,5 +1,6 @@
 package com.example.pingstack.auth.mapper;
 
+import com.example.pingstack.auth.dto.LoginResponseDto;
 import com.example.pingstack.auth.dto.RegisterRequestDto;
 import com.example.pingstack.auth.dto.RegisterResponseDto;
 import com.example.pingstack.auth.model.User;
@@ -22,7 +23,7 @@ public class RegisterMapper {
         return user;
     }
 
-    public static RegisterResponseDto toResponse(User user){
+    public static RegisterResponseDto toResponse(User user, LoginResponseDto loginResponseDto){
         return new RegisterResponseDto(
                 user.getFirstName(),
                 user.getLastName(),
@@ -32,7 +33,9 @@ public class RegisterMapper {
                 user.getCompanyName(),
                 user.getSector(),
                 user.getCreatorRole(),
-                user.getSource()
+                user.getSource(),
+                loginResponseDto
+
         );
     }
 }

@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/v1/payments")
 public class PaystackController {
@@ -29,12 +31,10 @@ public class PaystackController {
     private PayStackService payStackService;
 
     @PostMapping("/initialize")
-    public ResponseEntity<String> initializeWalletTopUpPayment (@RequestHeader("Authorization") String authHeader , @RequestBody WalletTopUpRequestDto walletTopUpRequestDto){
-
+    public ResponseEntity<Map<String,String>> initializeWalletTopUpPayment (@RequestHeader("Authorization") String authHeader , @RequestBody WalletTopUpRequestDto walletTopUpRequestDto){
             User user = extractUserInfoFromAuthHeader.extractUserInfo(authHeader);
-            String url = payStackService.initializePayment(user.getUserId(),walletTopUpRequestDto.getAmount(), user.getEmail());
-            return ResponseEntity.status(HttpStatus.OK).body(url);
-
+            Map<String ,String> data  = payStackService.initializePayment(user.getUserId(),walletTopUpRequestDto.getAmount(), user.getEmail());
+            return ResponseEntity.status(HttpStatus.OK).body(data);
     }
 
     @PostMapping("/webhook")

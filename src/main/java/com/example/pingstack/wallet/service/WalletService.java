@@ -28,4 +28,9 @@ public class WalletService {
         }
     }
 
+    public String getBalanceForUser (User user){
+        Wallet wallet = walletRepository.findWalletByUser(user).orElseThrow(() -> new RuntimeException("wallet not found"));
+        return wallet.getBalance().toString();
+    }
+
 }

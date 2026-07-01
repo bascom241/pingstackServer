@@ -33,6 +33,17 @@ public class User {
     @NotNull
     private String password;
 
+    @NotNull
+    private boolean isWalletCreated;
+
+    public boolean isWalletCreated() {
+        return isWalletCreated;
+    }
+
+    public void setWalletCreated(boolean walletCreated) {
+        isWalletCreated = walletCreated;
+    }
+
     @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinTable(name = "user_roles_bridge", joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "userId"),
             inverseJoinColumns = @JoinColumn(name = "roleId", referencedColumnName = "roleId")

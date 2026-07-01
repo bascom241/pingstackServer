@@ -3,6 +3,7 @@ package com.example.pingstack.wallet.service;
 
 import com.example.pingstack.auth.model.User;
 import com.example.pingstack.auth.repository.UserRepository;
+import com.example.pingstack.wallet.dto.CreateOrderRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
@@ -20,6 +21,9 @@ public class PaystackWebhookService {
     @Autowired
     private WalletTopUpService walletTopUpService;
 
+    @Autowired
+    private OrderService orderService;
+
     public void processIncomingWebhook(String paystackSignatureHeader, String rawJsonPayload){
         if(!isWebhookSignatureValid(paystackSignatureHeader,rawJsonPayload)){
             throw new SecurityException("Tampered or invalid webhook signature rejected.");
@@ -36,6 +40,8 @@ public class PaystackWebhookService {
             BigDecimal cleanNairaAmount = amountInKobo.divide(divisor, 4, RoundingMode.HALF_UP);
             User user = userRepository.findByEmail(customerEmail).orElseThrow(() -> new RuntimeException("user linked to webhook event not found"));
             walletTopUpService.creditWalletBalance(user.getUserId(), cleanNairaAmount);
+            CreateOrderRequest createOrderRequest = new CreateOrderRequest(reference, "paystack");
+            orderService.createOrder(customerEmail,createOrderRequest);
         }
     }
 
@@ -45,4 +51,8 @@ public class PaystackWebhookService {
         // against the raw payload string and match it directly with the header string.
         return true;
     }
+
+
+
+
 }

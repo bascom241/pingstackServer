@@ -14,6 +14,15 @@ public class RegisterResponseDto {
     private BusinessType sector;
     private CreatorRole creatorRole;
     private Location source;
+    private LoginResponseDto loginResponseDto;
+
+    public LoginResponseDto getLoginResponseDto() {
+        return loginResponseDto;
+    }
+
+    public void setLoginResponseDto(LoginResponseDto loginResponseDto) {
+        this.loginResponseDto = loginResponseDto;
+    }
 
     public String getFirstName() {
         return firstName;
@@ -87,7 +96,7 @@ public class RegisterResponseDto {
         this.source = source;
     }
 
-    public RegisterResponseDto(String firstName, String lastName, String email, String role, String phoneNumber, String companyName, BusinessType sector, CreatorRole creatorRole, Location source) {
+    public RegisterResponseDto(String firstName, String lastName, String email, String role, String phoneNumber, String companyName, BusinessType sector, CreatorRole creatorRole, Location source, LoginResponseDto loginResponseDto) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -97,5 +106,6 @@ public class RegisterResponseDto {
         this.sector = sector;
         this.creatorRole = creatorRole;
         this.source = source;
+        this.loginResponseDto = loginResponseDto;
     }
 }

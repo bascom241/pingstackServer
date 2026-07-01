@@ -1,10 +1,7 @@
 package com.example.pingstack.auth.controller;
 
 
-import com.example.pingstack.auth.dto.LoginRequestDto;
-import com.example.pingstack.auth.dto.LoginResponseDto;
-import com.example.pingstack.auth.dto.RegisterRequestDto;
-import com.example.pingstack.auth.dto.RegisterResponseDto;
+import com.example.pingstack.auth.dto.*;
 import com.example.pingstack.auth.service.UserDetailServiceImplementation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -31,6 +28,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login (@RequestBody LoginRequestDto loginRequestDto){
         LoginResponseDto data = userDetailServiceImplementation.login(loginRequestDto);
+        return ResponseEntity.status(HttpStatus.OK).body(data);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<LoginResponseDto> refresh (@RequestBody RefreshTokenRequest refreshTokenRequest){
+        LoginResponseDto data = userDetailServiceImplementation.refreshToken(refreshTokenRequest);
         return ResponseEntity.status(HttpStatus.OK).body(data);
     }
 }

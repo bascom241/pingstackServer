@@ -32,7 +32,7 @@ public class PayStackService {
     private String callBackUrl;
 
 
-    public  String initializePayment(UUID userId, BigDecimal amountInNaira, String userEmail){
+    public  Map<String ,String> initializePayment(UUID userId, BigDecimal amountInNaira, String userEmail){
         String paymentReference = "PING_" + UUID.randomUUID().toString().replace("-","");
         BigDecimal amountInKobo = amountInNaira.multiply(new BigDecimal(100));
         Map<String, Object> payload = new HashMap<>();
@@ -47,7 +47,11 @@ public class PayStackService {
         ResponseEntity<Map> response = restTemplate.postForEntity(PAYSTACK_INIT_URL,entity, Map.class);
         Map<String, Object> responseBody = response.getBody();
         Map<String, Object> data = (Map<String, Object>) responseBody.get("data");
-        return data.get("authorization_url").toString();
+        Map<String, String > result = new HashMap<>();
+        result.put("authUrl", (String) data.get("authorization_url"));
+        result.put("reference",(String) data.get("reference"));
+
+        return result;
     }
 
 

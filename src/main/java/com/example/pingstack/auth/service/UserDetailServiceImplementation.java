@@ -10,6 +10,7 @@ import com.example.pingstack.auth.repository.RefreshTokenRepository;
 import com.example.pingstack.auth.repository.RoleRepository;
 import com.example.pingstack.auth.repository.UserRepository;
 import com.example.pingstack.exceptions.auth.UserAlreadyExistException;
+import com.example.pingstack.mail.EmailService;
 import com.example.pingstack.wallet.service.WalletService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -59,11 +60,19 @@ public class UserDetailServiceImplementation implements UserDetailsService {
     @Autowired
     private WalletService walletService;
 
+    @Autowired
+    private EmailService emailService;
+
+
+    @Autowired
+    private CreateProfile createProfile;
+
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("user not found"));
         return new UserPrincipal(user);
     }
+
 
     public RegisterResponseDto registerUser (RegisterRequestDto requestDto) {
         Optional<User> userExist = userRepository.findByEmail(requestDto.getEmail());
@@ -89,8 +98,27 @@ public class UserDetailServiceImplementation implements UserDetailsService {
         }
 
         User savedUser = userRepository.save(newUser);
-        walletService.createWallet(savedUser);
-        return RegisterMapper.toResponse(savedUser);
+
+        try {
+            walletService.createWallet(savedUser);
+            savedUser.setWalletCreated(true);
+            userRepository.save(savedUser);
+        }catch(Exception e){
+            savedUser.setWalletCreated(false);
+            userRepository.save(savedUser);
+            emailService.sendWalletPendingReminder(savedUser);
+        }
+
+        LoginResponseDto loginResponseDto = checkEmailAndPasswordAndReturnToken(requestDto.getEmail(), requestDto.getPassword(), "registration successful", "failed to register");
+        String authHeader = "Bearer " + loginResponseDto.getAccessToken();
+        CreateProfileRequest request = new CreateProfileRequest();
+        request.setFirstName(request.getFirstName());
+        request.setLastName(request.getLastName());
+        request.setEmail(request.getEmail());
+        request.setSector(request.getSector());
+        createProfile.createProfile(authHeader,request);
+
+        return RegisterMapper.toResponse(savedUser, loginResponseDto);
     }
 
 
@@ -110,26 +138,7 @@ public class UserDetailServiceImplementation implements UserDetailsService {
         if(!passwordEncoder.matches(loginRequestDto.getPassword(), user.get().getPassword())){
             throw new RuntimeException("Invalid Login credentials");
         }
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequestDto.getEmail(),
-                        loginRequestDto.getPassword()
-                )
-        );
-        if(authentication.isAuthenticated()){
-            String accessToken = jwtService.generateToken(loginRequestDto.getEmail());
-            List<String> roles = jwtService.extractRoles(accessToken);
-            RefreshToken refreshToken = refreshTokenService.createToken(loginRequestDto.getEmail());
-            LoginResponseDto loginResponseDto = new LoginResponseDto();
-            loginResponseDto.setAccessToken(accessToken);
-            loginResponseDto.setRefreshToken(refreshToken.getToken());
-            loginResponseDto.setRoles(roles);
-            loginResponseDto.setMessage("Login successful");
-            return loginResponseDto;
-
-        }else {
-            throw new RuntimeException("Failed to login");
-        }
+      return checkEmailAndPasswordAndReturnToken(loginRequestDto.getEmail(), loginRequestDto.getPassword(), "login successful", "failed to login");
     }
 
 
@@ -148,5 +157,29 @@ public class UserDetailServiceImplementation implements UserDetailsService {
                     loginResponseDto.setMessage("Login successful");
                     return loginResponseDto;
                 }).orElseThrow(() -> new RuntimeException("Failed to get refresh Token"));
+    }
+
+
+    public LoginResponseDto checkEmailAndPasswordAndReturnToken (String email, String password, String successMessage, String errorMessage){
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                       email,
+                        password
+                )
+        );
+        if(authentication.isAuthenticated()){
+            String accessToken = jwtService.generateToken(email);
+            List<String> roles = jwtService.extractRoles(accessToken);
+            RefreshToken refreshToken = refreshTokenService.createToken(email);
+            LoginResponseDto loginResponseDto = new LoginResponseDto();
+            loginResponseDto.setAccessToken(accessToken);
+            loginResponseDto.setRefreshToken(refreshToken.getToken());
+            loginResponseDto.setRoles(roles);
+            loginResponseDto.setMessage(successMessage);
+            return loginResponseDto;
+
+        }else {
+            throw new RuntimeException(errorMessage);
+        }
     }
 }
