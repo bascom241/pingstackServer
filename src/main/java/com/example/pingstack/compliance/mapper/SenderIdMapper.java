@@ -14,7 +14,7 @@ public class SenderIdMapper {
         SenderId senderId = new SenderId();
         senderId.setSenderId(senderIdRequest.getSenderId());
         senderId.setCompanyName(senderIdRequest.getCompanyName());
-        senderId.setUseCaseSample(senderId.getUseCaseSample());
+        senderId.setUseCaseSample(senderIdRequest.getUseCaseSample());
         return senderId;
     }
 

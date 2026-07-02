@@ -3,13 +3,9 @@ package com.example.pingstack.compliance.dto;
 import com.example.pingstack.compliance.enums.SenderIdStatus;
 
 public class SenderIdRequest {
-
-
     private String senderId;
     private String companyName;
     private String useCaseSample;
-
-
     public String getSenderId() {
         return senderId;
     }

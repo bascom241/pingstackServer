@@ -32,7 +32,7 @@ public class SenderId {
     private SenderIdStatus status = SenderIdStatus.Pending;
 
     @NotNull
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "userId")
     private User user;
 

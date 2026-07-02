@@ -17,7 +17,7 @@ public class Kyc {
     private UUID kycId;
 
     @NotNull
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "userId")
     private User user;
 
