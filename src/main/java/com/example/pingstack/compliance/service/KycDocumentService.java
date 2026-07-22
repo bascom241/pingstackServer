@@ -59,7 +59,6 @@ public class KycDocumentService {
         kyc.setUser(user);
         kyc.setStatus(KycApproval.Pending);
         uploadKycImageToCloudinary(file, kyc);
-
         kycRepository.save(kyc);
         return kycMapper.toResponse(kyc);
     }

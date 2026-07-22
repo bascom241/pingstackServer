@@ -6,6 +6,7 @@ import com.example.pingstack.compliance.enums.SenderIdStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Table(name = "senderId")
@@ -35,6 +36,12 @@ public class SenderId {
     @ManyToOne
     @JoinColumn(name = "userId")
     private User user;
+
+
+    @NotNull
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+
 
     public User getUser() {
         return user;
@@ -82,5 +89,13 @@ public class SenderId {
 
     public void setStatus(SenderIdStatus status) {
         this.status = status;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }

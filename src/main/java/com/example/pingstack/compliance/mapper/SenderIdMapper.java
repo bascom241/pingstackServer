@@ -23,7 +23,8 @@ public class SenderIdMapper {
                 senderId.getSenderId(),
                 senderId.getCompanyName(),
                 senderId.getUseCaseSample(),
-                senderId.getStatus()
+                senderId.getStatus(),
+                senderId.getCreatedAt().toString()
         );
     }
 }

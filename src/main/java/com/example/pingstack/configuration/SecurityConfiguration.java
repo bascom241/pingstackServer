@@ -63,7 +63,8 @@ public class SecurityConfiguration {
                                         "/api/v1/auth/reset-password",
                                         "/api/v1/auth/test-otp",
                                         "/api/v1/role",
-                                        "/api/v1/payments/webhook"
+                                        "/api/v1/payments/webhook",
+                                         "/api/v1/callbacks/termii-dlr"
 
                                 ).permitAll()
                                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")

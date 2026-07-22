@@ -26,5 +26,16 @@ public class WalletTopUpService {
         walletRepository.save(wallet);
     }
 
+    @Transactional
+    public void debitWalletBalance(UUID userId, BigDecimal costToDebit){
+        Wallet wallet = walletRepository.findWalletForUpdate(userId);
+        if(wallet == null){
+            throw new RuntimeException("Target system wallet structure missing");
+        }
+        BigDecimal updateBalance = wallet.getBalance().subtract(costToDebit);
+        wallet.setBalance(updateBalance);
+        walletRepository.save(wallet);
+    }
+
 
 }

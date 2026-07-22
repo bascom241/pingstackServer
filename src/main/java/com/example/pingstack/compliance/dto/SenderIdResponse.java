@@ -12,6 +12,7 @@ public class SenderIdResponse {
     private String companyName;
     private String useCaseSample;
     private SenderIdStatus status;
+    private String createdAt;
 
     public String getSenderId() {
         return senderId;
@@ -45,10 +46,19 @@ public class SenderIdResponse {
         this.status = status;
     }
 
-    public SenderIdResponse(String senderId, String companyName, String useCaseSample, SenderIdStatus status) {
+    public String getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(String createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public SenderIdResponse(String senderId, String companyName, String useCaseSample, SenderIdStatus status, String createdAt) {
         this.senderId = senderId;
         this.companyName = companyName;
         this.useCaseSample = useCaseSample;
         this.status = status;
+        this.createdAt = createdAt;
     }
 }
