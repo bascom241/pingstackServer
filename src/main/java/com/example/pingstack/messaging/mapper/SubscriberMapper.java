@@ -19,6 +19,9 @@ public class SubscriberMapper {
         return subscriber;
     }
 
+
+
+
     public CreateSubscriberResponse toResponse (Subscriber subscriber){
         return new CreateSubscriberResponse(
                subscriber.getSubscriberId(),

@@ -1,12 +1,14 @@
 package com.example.pingstack.messaging.repository;
 
 
+import com.example.pingstack.auth.model.User;
 import com.example.pingstack.messaging.dtos.AudienceListSummary;
 import com.example.pingstack.messaging.model.AudienceList;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
 import java.util.UUID;
 import java.util.List;
 
@@ -18,5 +20,6 @@ public interface AudienceListRepository extends JpaRepository<AudienceList, UUID
             "WHERE l.user.id = :userId " +
             "GROUP BY l.id, l.name, l.updatedAt")
     List<AudienceListSummary> findAudienceListByUserId(@Param("userId") UUID userId);
+    Optional<AudienceList> findByUser(User user);
 
 }

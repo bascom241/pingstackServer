@@ -52,9 +52,14 @@ public class AudienceController {
         return ResponseEntity.status(HttpStatus.OK).body(data);
     }
 
+    @GetMapping("/subscriber/{subscriberId}")
+    public ResponseEntity<CreateSubscriberResponse> getSingleSubscriber(@PathVariable UUID subscriberId){
+        CreateSubscriberResponse data = audienceService.getSingleSubscriber(subscriberId);
+        return ResponseEntity.ok(data);
+    }
+
     @PostMapping("/subscriber")
     public ResponseEntity<CreateSubscriberResponse> addSubscriber (@RequestHeader("Authorization") String authHeader, @RequestBody CreateSubscriberRequest createSubscriberRequest){
-        User user = extractUserInfoFromAuthHeader.extractUserInfo(authHeader);
         CreateSubscriberResponse data = audienceService.addSingleMember(createSubscriberRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(data);
     }
@@ -64,5 +69,19 @@ public class AudienceController {
         Integer data = audienceService.uploadBulkSubscribers(listId, file);
         return ResponseEntity.status(HttpStatus.CREATED).body(data);
     }
+
+    @PutMapping("/subscriber")
+    public ResponseEntity<CreateSubscriberResponse> updateSubscriber (@RequestBody UpdateSubscriberRequest updateSubscriberRequest){
+        CreateSubscriberResponse data = audienceService.updateSingleSubscriber(updateSubscriberRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).body(data);
+    }
+    @DeleteMapping("/subscriber")
+    // Pending
+    public ResponseEntity<Void> deleteSubscriber(@RequestParam UUID subscriberId, @RequestParam UUID audienceId, @RequestHeader("Authorization") String authHeader){
+        audienceService.deleteSubscriber(subscriberId, audienceId, authHeader);
+        ResponseEntity.status(HttpStatus.GONE);
+        return null;
+    }
+
 
 }

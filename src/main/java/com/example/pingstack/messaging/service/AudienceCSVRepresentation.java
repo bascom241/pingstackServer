@@ -7,11 +7,12 @@ public class AudienceCSVRepresentation {
 
     @CsvBindByName(column = "name")
     private String name;
+
     @CsvBindByName(column = "destinationNumber")
     private String dNumber;
+
     @CsvBindByName(column = "status")
     private SubscriberStatus status;
-
 
     public String getName() {
         return name;
