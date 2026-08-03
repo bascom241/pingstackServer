@@ -7,6 +7,7 @@ public class ApiKeyGeneratedResponse {
     private String message;
 
 
+
     public ApiKeyGeneratedResponse(String rawApiKey, String apiKeyPrefix) {
         this.rawApiKey = rawApiKey;
         this.apiKeyPrefix = apiKeyPrefix;

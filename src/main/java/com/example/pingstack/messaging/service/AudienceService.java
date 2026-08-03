@@ -53,8 +53,6 @@ public class AudienceService {
     private ExtractUserInfoFromAuthHeader extractUserInfoFromAuthHeader;
 
 
-
-
     // Utils to upload csv
     private List<Subscriber> parseCsv(MultipartFile file, AudienceList audienceList){
         try(Reader reader = new BufferedReader(new BufferedReader(new InputStreamReader(file.getInputStream())))){
@@ -161,7 +159,6 @@ public class AudienceService {
     }
 
     public void deleteSubscriber ( UUID subscriberId, UUID audienceId,  String authHeader){
-
         User user = extractUserInfoFromAuthHeader.extractUserInfo(authHeader);
         AudienceList audienceList = audienceListRepository.findById(audienceId).orElseThrow(() -> new ResourceNotFoundException("audience not found"));
         if(!audienceList.getUser().getUserId().equals(user.getUserId())){
@@ -172,11 +169,5 @@ public class AudienceService {
                 .orElseThrow(() -> new ResourceNotFoundException("Subscriber not found"));
         subscriberRepository.delete(subscriber);
     }
-
-
-
-
-
-
 
 }

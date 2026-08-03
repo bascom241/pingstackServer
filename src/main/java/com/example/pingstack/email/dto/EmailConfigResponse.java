@@ -4,8 +4,6 @@ import jakarta.persistence.Column;
 
 public class EmailConfigResponse {
 
-
-
     private String apiKeyHash;
     private String apiKeyPrefix;
     private String customDomain;

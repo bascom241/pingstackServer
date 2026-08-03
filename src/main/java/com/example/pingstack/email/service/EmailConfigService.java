@@ -33,18 +33,21 @@ public class EmailConfigService {
 
     public EmailConfigResponse createOrGetEmailConfig (String authHeader){
         User user = extractUserInfoFromAuthHeader.extractUserInfo(authHeader);
-        EmailConfig emailConfigResult = emailConfigRepository.findByUserId(user.getUserId()).orElseGet(() -> {
-            EmailConfig emailConfig = new EmailConfig();
-            emailConfig.setUserId(user.getUserId());
-            return emailConfig;
-        });
-        String rawApiKey = apiKeyUtil.generateRawKey();
-        String hashedKey = apiKeyUtil.hashKey(rawApiKey);
-        String prefix = apiKeyUtil.extractPrefix(rawApiKey);
-        emailConfigResult.setApiKeyHash(hashedKey);
-        emailConfigResult.setApiKeyPrefix(prefix);
-        emailConfigRepository.save(emailConfigResult);
-        return emailConfigMapper.toResponse(emailConfigResult);
+        EmailConfig emailConfig = emailConfigRepository
+                .findByUserId(user.getUserId())
+                .orElseGet(() -> {
+
+                    EmailConfig config = new EmailConfig();
+                    config.setUserId(user.getUserId());
+
+                    String rawApiKey = apiKeyUtil.generateRawKey();
+                    config.setApiKeyHash(apiKeyUtil.hashKey(rawApiKey));
+                    config.setApiKeyPrefix(apiKeyUtil.extractPrefix(rawApiKey));
+
+                    return emailConfigRepository.save(config);
+                });
+
+        return emailConfigMapper.toResponse(emailConfig);
     }
 
     private String generateApiKey(){
@@ -70,12 +73,10 @@ public class EmailConfigService {
     public UpdatePreferenceResponse updateUserPreference (String authHeader, UpdatePreferenceRequest updatePreferenceRequest){
         User user = extractUserInfoFromAuthHeader.extractUserInfo(authHeader);
         EmailConfig emailConfig = emailConfigRepository.findByUserId(user.getUserId()).orElseThrow(() -> new RuntimeException("Email Config not found for this user"));
-        if(updatePreferenceRequest.isTrackClicks()) emailConfig.setTrackClicks(updatePreferenceRequest.isTrackClicks());
-        if(updatePreferenceRequest.isBounceAlerts()) emailConfig.setBounceAlerts(updatePreferenceRequest.isBounceAlerts());
-        if(updatePreferenceRequest.isTrackOpens()) emailConfig.setTrackOpens(updatePreferenceRequest.isTrackOpens());
-
+        emailConfig.setTrackClicks(updatePreferenceRequest.isTrackClicks());
+        emailConfig.setTrackOpens(updatePreferenceRequest.isTrackOpens());
+        emailConfig.setBounceAlerts(updatePreferenceRequest.isBounceAlerts());
         emailConfigRepository.save(emailConfig);
-
         return emailConfigMapper.toPreferenceResponse(emailConfig);
     }
 
