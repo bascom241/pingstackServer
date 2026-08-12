@@ -52,4 +52,12 @@ public class BrevoDomainDto {
     public void setDns_records(Map<String, DnsRecordDto> dns_records) {
         this.dns_records = dns_records;
     }
+
+    public BrevoDomainDto(String id, String domain_name, String domain_provider, String message, Map<String, DnsRecordDto> dns_records) {
+        this.id = id;
+        this.domain_name = domain_name;
+        this.domain_provider = domain_provider;
+        this.message = message;
+        this.dns_records = dns_records;
+    }
 }

@@ -20,17 +20,23 @@ public class BrevoDomain {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "email_config_id")
     private EmailConfig emailConfig;
-
     @OneToMany(
             mappedBy = "brevoDomain",
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
     private List<DnsRecord> dnsRecords = new ArrayList<>();
-
     private boolean isVerified = false;
     private boolean isAuthenticated = false;
+    private boolean isPrimary = false;
 
+    public boolean isPrimary() {
+        return isPrimary;
+    }
+
+    public void setPrimary(boolean primary) {
+        isPrimary = primary;
+    }
 
     public String getBrevoDomainId() {
         return brevoDomainId;

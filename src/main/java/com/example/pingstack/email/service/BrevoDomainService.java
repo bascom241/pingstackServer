@@ -3,10 +3,7 @@ package com.example.pingstack.email.service;
 
 import com.example.pingstack.auth.model.User;
 import com.example.pingstack.email.dto.UpdateDomainRequest;
-import com.example.pingstack.email.dto.brevo.BrevoDomainDto;
-import com.example.pingstack.email.dto.brevo.DnsRecordDto;
-import com.example.pingstack.email.dto.brevo.DomainVerificationDto;
-import com.example.pingstack.email.dto.brevo.VerifyDomainRequest;
+import com.example.pingstack.email.dto.brevo.*;
 import com.example.pingstack.email.mapper.BrevoDomainMapper;
 import com.example.pingstack.email.model.EmailConfig;
 import com.example.pingstack.email.model.domain.BrevoDomain;
@@ -15,6 +12,7 @@ import com.example.pingstack.email.repository.BrevoDomainRepository;
 import com.example.pingstack.email.repository.DnsProviderRepository;
 import com.example.pingstack.email.repository.EmailConfigRepository;
 import com.example.pingstack.exceptions.notfound.ResourceNotFoundException;
+import com.example.pingstack.exceptions.unauthorized.AccessDeniedException;
 import com.example.pingstack.wallet.utils.ExtractUserInfoFromAuthHeader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,9 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.*;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 public class BrevoDomainService {
@@ -96,7 +92,7 @@ public class BrevoDomainService {
             }
             User user = extractUserInfoFromAuthHeader.extractUserInfo(authHeader);
             EmailConfig emailConfig =  emailConfigRepository.findByUserId(user.getUserId()).orElseThrow(() -> new ResourceNotFoundException("email config not found"));
-            BrevoDomain brevoDomain = brevoDomainRepository.findByEmailConfig(emailConfig).orElseThrow(() -> new ResourceNotFoundException("Domain not found"));
+            BrevoDomain brevoDomain = brevoDomainRepository.findById(verifyDomainRequest.getDomainId()).orElseThrow(() -> new ResourceNotFoundException("Domain not found"));
             List<DnsRecord> dnsRecords = dnsProviderRepository.findByBrevoDomain(brevoDomain).orElseThrow(() -> new ResourceNotFoundException("Dns config is empty"));
             Map<String, DnsRecordDto> brevoRecords = verificationResult.getDns_records();
             for(DnsRecord dnsRecord : dnsRecords){
@@ -115,6 +111,78 @@ public class BrevoDomainService {
         }
     }
 
+    public List<AllBrevoDomainDto> getAllDomainsWithDnsConfig (String authHeader){
+        User user = extractUserInfoFromAuthHeader.extractUserInfo(authHeader);
+        EmailConfig emailConfig = emailConfigRepository.findByUserId(user.getUserId()).orElseThrow(() -> new ResourceNotFoundException("Email config not found"));
+        List<BrevoDomain> domains = brevoDomainRepository.findByEmailConfig(emailConfig);
+        return domains.stream().map(brevoDomainMapper::toResponse).toList();
+    }
+
+    public AllBrevoDomainDto getSingleDomainDetail(String domainId) {
+        BrevoDomain brevoDomain = brevoDomainRepository.findById(domainId).orElseThrow(()-> new ResourceNotFoundException("domain not found"));
+        return  brevoDomainMapper.toResponse(brevoDomain);
+    }
+
+    public AllBrevoDomainDto warningBeforeMakingPrimary (String authHeader , String domainId) {
+        System.out.println("DOMAIN ID RECEIVED: " + domainId);
+
+        BrevoDomain brevoDomain = brevoDomainRepository
+                .findById(domainId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "SELECTED DOMAIN NOT FOUND: " + domainId
+                        ));
+
+        System.out.println(
+                "FOUND DOMAIN: " + brevoDomain.getDomainName()
+        );
+        if(brevoDomain.isPrimary()){
+            throw new IllegalArgumentException("Domain Already Primary");
+        }
+        User user = extractUserInfoFromAuthHeader.extractUserInfo(authHeader);
+        EmailConfig emailConfig = emailConfigRepository.findByUserId(user.getUserId()).orElseThrow(() -> new ResourceNotFoundException("Email config not found"));
+        if(!brevoDomain.getEmailConfig().equals(emailConfig)){
+            throw new AccessDeniedException("Domain does not belong to this user");
+        }
+        BrevoDomain primaryDomain = brevoDomainRepository.findByIsPrimaryTrueAndEmailConfig(emailConfig).orElseThrow(() -> new ResourceNotFoundException("Domain not found"));
+        return brevoDomainMapper.toResponse(primaryDomain);
+    }
+
+
+    public AllBrevoDomainDto makeDomainPrimary (String authHeader , String domainId) {
+        BrevoDomain brevoDomain = brevoDomainRepository.findById(domainId).orElseThrow(() -> new ResourceNotFoundException("domain not found "));
+        if(brevoDomain.isPrimary()){
+            throw new IllegalArgumentException("Domain Already Primary");
+        }
+        User user = extractUserInfoFromAuthHeader.extractUserInfo(authHeader);
+        EmailConfig emailConfig = emailConfigRepository.findByUserId(user.getUserId()).orElseThrow(() -> new ResourceNotFoundException("Email config not found"));
+        if(!brevoDomain.getEmailConfig().equals(emailConfig)){
+            throw new AccessDeniedException("Domain does not belong to this user");
+        }
+        Optional<BrevoDomain> primaryDomain = brevoDomainRepository.findByIsPrimaryTrueAndEmailConfig(emailConfig);
+        primaryDomain.ifPresent(domain -> {
+            domain.setPrimary(false);
+            brevoDomainRepository.save(domain);
+        });
+        brevoDomain.setPrimary(true);
+        brevoDomainRepository.save(brevoDomain);
+        return brevoDomainMapper.toResponse(brevoDomain);
+    }
+
+
+
+    public String deleteDomain (String domainId, String authHeader) {
+        BrevoDomain brevoDomain = brevoDomainRepository.findById(domainId).orElseThrow(() -> new ResourceNotFoundException("domain not found"));
+        User user = extractUserInfoFromAuthHeader.extractUserInfo(authHeader);
+        EmailConfig emailConfig = emailConfigRepository.findByUserId(user.getUserId()).orElseThrow(() -> new ResourceNotFoundException("Email config not found for the user "));
+
+        if(!brevoDomain.getEmailConfig().getUserId().equals(emailConfig.getUserId())){
+            throw new AccessDeniedException("You can not delete this domain");
+        }
+         brevoDomainRepository.delete(brevoDomain);
+
+        return brevoDomain.getDomainName() + "Deleted successfully";
+    }
 
 
 
