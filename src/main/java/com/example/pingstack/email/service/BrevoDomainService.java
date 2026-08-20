@@ -17,8 +17,12 @@ import com.example.pingstack.wallet.utils.ExtractUserInfoFromAuthHeader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.*;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.*;
 
@@ -67,48 +71,121 @@ public class BrevoDomainService {
         }
     }
 
-
-    public DomainVerificationDto verifyDomain(String authHeader, VerifyDomainRequest verifyDomainRequest){
+    public DomainVerificationDto verifyDomain(String authHeader, VerifyDomainRequest verifyDomainRequest) {
         if (verifyDomainRequest == null || verifyDomainRequest.getDomainName() == null || verifyDomainRequest.getDomainName().isBlank()) {
             throw new IllegalArgumentException("Domain name must not be empty or null");
         }
-        RestTemplate restTemplate = new RestTemplate();
+
+        if (verifyDomainRequest.getDomainId() == null) {
+            throw new IllegalArgumentException("Domain ID must not be null");
+        }
+
+        User user = extractUserInfoFromAuthHeader.extractUserInfo(authHeader);
+        EmailConfig emailConfig = emailConfigRepository.findByUserId(user.getUserId())
+                .orElseThrow(() -> new IllegalStateException("Email config not found for user ID: " + user.getUserId()));
+
+        BrevoDomain brevoDomain = brevoDomainRepository.findById(verifyDomainRequest.getDomainId())
+                .orElseThrow(() -> new IllegalStateException("Domain not found with ID: " + verifyDomainRequest.getDomainId()));
+
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
         httpHeaders.set("api-key", brevoApiKey);
         HttpEntity<Void> requestEntity = new HttpEntity<>(httpHeaders);
-        String url = BREVO_DOMAINS_URL + "/{domainName}";
+
+        String url = BREVO_DOMAINS_URL + "/{domainName}/verify";
+        RestTemplate restTemplate = new RestTemplate();
+
         try {
             ResponseEntity<DomainVerificationDto> response = restTemplate.exchange(
                     url,
-                    HttpMethod.GET,
+                    HttpMethod.PUT,
                     requestEntity,
                     DomainVerificationDto.class,
                     verifyDomainRequest.getDomainName()
             );
+
             DomainVerificationDto verificationResult = response.getBody();
             if (verificationResult == null) {
-                throw new RuntimeException("Received empty response from Brevo API");
+                throw new IllegalStateException("Received empty response from Brevo API during domain verification");
             }
-            User user = extractUserInfoFromAuthHeader.extractUserInfo(authHeader);
-            EmailConfig emailConfig =  emailConfigRepository.findByUserId(user.getUserId()).orElseThrow(() -> new ResourceNotFoundException("email config not found"));
-            BrevoDomain brevoDomain = brevoDomainRepository.findById(verifyDomainRequest.getDomainId()).orElseThrow(() -> new ResourceNotFoundException("Domain not found"));
-            List<DnsRecord> dnsRecords = dnsProviderRepository.findByBrevoDomain(brevoDomain).orElseThrow(() -> new ResourceNotFoundException("Dns config is empty"));
+
+            List<DnsRecord> dnsRecords = dnsProviderRepository.findByBrevoDomain(brevoDomain)
+                    .orElseThrow(() -> new IllegalStateException("DNS records configuration not found for domain: " + brevoDomain.getDomainName()));
+
             Map<String, DnsRecordDto> brevoRecords = verificationResult.getDns_records();
-            for(DnsRecord dnsRecord : dnsRecords){
-                DnsRecordDto dnsRecordDto = brevoRecords.get(dnsRecord.getRecordName());
-                if(dnsRecordDto != null){
-                    dnsRecord.setVerified(dnsRecordDto.isStatus());
+            boolean allRecordsVerified = true;
+
+            if (brevoRecords != null && !brevoRecords.isEmpty()) {
+                for (DnsRecord dnsRecord : dnsRecords) {
+                    // Match by record type to prevent key-mismatch false positives
+                    DnsRecordDto matchingBrevoRecord = brevoRecords.values().stream()
+                            .filter(dto -> dto.getType() != null && dto.getType().equalsIgnoreCase(dnsRecord.getType()))
+                            .findFirst()
+                            .orElse(brevoRecords.get(dnsRecord.getRecordName()));
+
+                    if (matchingBrevoRecord != null) {
+                        boolean isVerified = Boolean.TRUE.equals(matchingBrevoRecord.isStatus());
+                        dnsRecord.setVerified(isVerified);
+                        if (!isVerified) {
+                            allRecordsVerified = false;
+                        }
+                    } else {
+                        dnsRecord.setVerified(false);
+                        allRecordsVerified = false;
+                    }
                 }
+            } else {
+                allRecordsVerified = false;
             }
+
             dnsProviderRepository.saveAll(dnsRecords);
-            brevoDomain.setVerified(verificationResult.isVerified());
-            brevoDomain.setAuthenticated(verificationResult.isAuthenticated());
+
+            // Compute strict verification state
+            boolean isDomainFullyVerified = allRecordsVerified && Boolean.TRUE.equals(verificationResult.isVerified());
+
+            brevoDomain.setVerified(isDomainFullyVerified);
+            brevoDomain.setAuthenticated(Boolean.TRUE.equals(verificationResult.isAuthenticated()) && isDomainFullyVerified);
             brevoDomainRepository.save(brevoDomain);
+
+            // Sync DTO before returning to client
+            verificationResult.setVerified(isDomainFullyVerified);
+
             return verificationResult;
-        } catch (RuntimeException e) {
-            throw new RuntimeException("Failed to verify domain with Brevo API: " + e.getMessage(), e);
+
+        } catch (HttpStatusCodeException e) {
+            String responseBody = e.getResponseBodyAsString();
+
+            if (e.getStatusCode() == HttpStatus.UNAUTHORIZED || e.getStatusCode() == HttpStatus.FORBIDDEN) {
+                throw new IllegalStateException("Invalid Brevo API key or credentials");
+            } else if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                throw new IllegalArgumentException("Domain '" + verifyDomainRequest.getDomainName() + "' was not found in Brevo");
+            }
+
+            throw new RuntimeException("Brevo API error: " + extractBrevoMessage(responseBody), e);
+
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            // Re-throw standard validation or state errors directly
+            throw e;
+
+        } catch (Exception e) {
+            throw new RuntimeException("An unexpected error occurred while verifying domain: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Extracts human-readable message from Brevo error JSON body.
+     */
+    private String extractBrevoMessage(String responseBody) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(responseBody);
+            if (root.has("message")) {
+                return root.get("message").asText();
+            }
+        } catch (Exception ignored) {
+            // Fallback if parsing fails
+        }
+        return "Failed to complete DNS verification with external provider";
     }
 
     public List<AllBrevoDomainDto> getAllDomainsWithDnsConfig (String authHeader){
@@ -171,18 +248,49 @@ public class BrevoDomainService {
 
 
 
-    public String deleteDomain (String domainId, String authHeader) {
-        BrevoDomain brevoDomain = brevoDomainRepository.findById(domainId).orElseThrow(() -> new ResourceNotFoundException("domain not found"));
+    @Transactional
+    public String deleteDomain(String domainId, String authHeader) {
         User user = extractUserInfoFromAuthHeader.extractUserInfo(authHeader);
-        EmailConfig emailConfig = emailConfigRepository.findByUserId(user.getUserId()).orElseThrow(() -> new ResourceNotFoundException("Email config not found for the user "));
 
-        if(!brevoDomain.getEmailConfig().getUserId().equals(emailConfig.getUserId())){
-            throw new AccessDeniedException("You can not delete this domain");
+        EmailConfig emailConfig = emailConfigRepository.findByUserId(user.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Email config not found for the user"));
+
+        BrevoDomain brevoDomain = brevoDomainRepository.findById(domainId)
+                .orElseThrow(() -> new ResourceNotFoundException("Domain not found"));
+
+        if (!brevoDomain.getEmailConfig().getUserId().equals(emailConfig.getUserId())) {
+            throw new AccessDeniedException("You cannot delete this domain");
         }
-         brevoDomainRepository.delete(brevoDomain);
 
-        return brevoDomain.getDomainName() + "Deleted successfully";
+        String domainName = brevoDomain.getDomainName();
+
+        // 1. Delete domain from Brevo API
+        try {
+            HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.set("api-key", brevoApiKey);
+            HttpEntity<Void> requestEntity = new HttpEntity<>(httpHeaders);
+
+            String url = BREVO_DOMAINS_URL + "/" + domainName;
+            RestTemplate restTemplate = new RestTemplate();
+            restTemplate.exchange(url, HttpMethod.DELETE, requestEntity, Void.class);
+
+        } catch (HttpStatusCodeException e) {
+            // If Brevo returns 404, the domain is already removed on Brevo, so we proceed silently.
+            if (e.getStatusCode() != HttpStatus.NOT_FOUND) {
+                throw new RuntimeException("Failed to delete domain from Brevo: " + e.getResponseBodyAsString(), e);
+            }
+        }
+
+        // 2. Delete linked DNS records locally (if cascading delete is not configured on JPA relationship)
+        dnsProviderRepository.deleteByBrevoDomain(brevoDomain);
+
+        // 3. Delete domain locally
+        brevoDomainRepository.delete(brevoDomain);
+
+        return domainName + " deleted successfully";
     }
+
+
 
 
 

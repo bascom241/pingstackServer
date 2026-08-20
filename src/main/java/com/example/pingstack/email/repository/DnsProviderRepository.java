@@ -10,4 +10,6 @@ import java.util.UUID;
 
 public interface DnsProviderRepository extends JpaRepository<DnsRecord , UUID> {
     Optional<List<DnsRecord>> findByBrevoDomain(BrevoDomain brevoDomain);
+
+    void deleteByBrevoDomain(BrevoDomain brevoDomain);
 }

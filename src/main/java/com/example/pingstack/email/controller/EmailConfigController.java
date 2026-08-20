@@ -52,7 +52,7 @@ public class EmailConfigController {
         return ResponseEntity.status(HttpStatus.OK).body(data);
     }
 
-    @GetMapping("/verify")
+    @PutMapping("/verify")
     public ResponseEntity<DomainVerificationDto> verifyDomain(@RequestHeader("Authorization") String authHeader, @RequestBody VerifyDomainRequest verifyDomainRequest){
         DomainVerificationDto data = brevoDomainService.verifyDomain(authHeader, verifyDomainRequest);
         return ResponseEntity.status(HttpStatus.OK).body(data);
@@ -85,10 +85,16 @@ public class EmailConfigController {
     }
 
     @DeleteMapping("/domain/{domainId}")
-    public ResponseEntity<String> deleteDomain(@RequestHeader("Authorization") String authHeader, @PathVariable String domainId) {
-        String  data = brevoDomainService.deleteDomain(domainId, authHeader);
-        return ResponseEntity.status(HttpStatus.GONE).body(data);
+    public ResponseEntity<String> deleteDomain(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable String domainId) {
+        String data = brevoDomainService.deleteDomain(domainId, authHeader);
+        return ResponseEntity.ok(data);
     }
+
+
+
+
 
 
 }
