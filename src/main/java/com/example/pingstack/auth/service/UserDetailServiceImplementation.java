@@ -93,7 +93,7 @@ public class UserDetailServiceImplementation implements UserDetailsService {
             newUser.setRoles(new HashSet<>(Set.of(role)));
 
         }else {
-            Role role = roleRepository.findByRoleName("User").orElseThrow(()-> new RuntimeException("role not found"));
+            Role role = roleRepository.findByRoleName("user").orElseThrow(()-> new RuntimeException("role not found"));
             newUser.setRoles(new HashSet<>(Set.of(role)));
         }
 

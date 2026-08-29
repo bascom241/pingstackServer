@@ -20,6 +20,10 @@ public class Role {
     public Role() {
     }
 
+    public Role(String roleName) {
+        this.roleName = roleName;
+    }
+
     public UUID getRoleId() {
         return roleId;
     }
