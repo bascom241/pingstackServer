@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -36,7 +37,6 @@ public class EmailTemplateService {
 
     public EmailTemplateResponse createTemplate (String authHeader, CreateTemplateRequestDto createTemplateRequestDto){
         User user = extractUserInfoFromAuthHeader.extractUserInfo(authHeader);
-
         String createdSlug = SlugUtil.toSlug(createTemplateRequestDto.getSlug());
         Optional <EmailTemplate> isEmailTemplateExist = emailTemplateRepository.findBySlug(createdSlug);
         if(isEmailTemplateExist.isPresent()){
@@ -53,10 +53,17 @@ public class EmailTemplateService {
         emailTemplateVersion.setHtmlContent(createTemplateRequestDto.getVersion().htmlContent());
         emailTemplateVersion.setCreatedBy(user);
         emailTemplateVersion.setCreatedAt(LocalDateTime.now());
+        emailTemplateVersion.setEmailTemplate(emailTemplate);
         emailTemplate.getVersions().add(emailTemplateVersion);
         emailTemplateRepository.save(emailTemplate);
         EmailTemplate savedTemplate = emailTemplateRepository.save(emailTemplate);
         return emailTemplateMapper.toResponse(savedTemplate);
-
     }
+
+    public List<EmailTemplateResponse> getAllEmailTemplateForUser (String authHeader){
+        User user = extractUserInfoFromAuthHeader.extractUserInfo(authHeader);
+        List<EmailTemplate> emailTemplates = emailTemplateRepository.findByUser(user);
+        return emailTemplates.stream().map(emailTemplate -> emailTemplateMapper.toResponse(emailTemplate)).toList();
+     }
+
 }

@@ -3,7 +3,10 @@ package com.example.pingstack.templating.mapper;
 import com.example.pingstack.templating.dtos.CreateTemplateRequestDto;
 import com.example.pingstack.templating.dtos.EmailTemplateResponse;
 import com.example.pingstack.templating.model.EmailTemplate;
+import org.springframework.stereotype.Component;
 
+
+@Component
 public class EmailTemplateMapper {
 
 
@@ -13,6 +16,7 @@ public class EmailTemplateMapper {
         emailTemplate.setEmailTemplateDescription(createTemplateRequestDto.getDescription());
         emailTemplate.setEmailTemplateCategory(createTemplateRequestDto.getCategory());
         emailTemplate.setEmailTemplateStatus(createTemplateRequestDto.getStatus());
+
         return emailTemplate;
     }
 

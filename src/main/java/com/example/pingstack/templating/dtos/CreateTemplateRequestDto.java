@@ -11,7 +11,7 @@ public class CreateTemplateRequestDto {
     private EmailTemplateCategory category;
     private String slug;
     private EmailTemplateStatus status;
-    private String currentVersion;
+
 
     @NotNull
     @Valid
@@ -65,11 +65,5 @@ public class CreateTemplateRequestDto {
         this.status = status;
     }
 
-    public String getCurrentVersion() {
-        return currentVersion;
-    }
 
-    public void setCurrentVersion(String currentVersion) {
-        this.currentVersion = currentVersion;
-    }
 }
