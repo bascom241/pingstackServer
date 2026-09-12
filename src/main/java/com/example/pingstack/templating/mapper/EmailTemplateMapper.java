@@ -16,13 +16,13 @@ public class EmailTemplateMapper {
         emailTemplate.setEmailTemplateDescription(createTemplateRequestDto.getDescription());
         emailTemplate.setEmailTemplateCategory(createTemplateRequestDto.getCategory());
         emailTemplate.setEmailTemplateStatus(createTemplateRequestDto.getStatus());
-
         return emailTemplate;
     }
 
 
     public EmailTemplateResponse toResponse (EmailTemplate emailTemplate){
         return new EmailTemplateResponse(
+                emailTemplate.getEmailTemplateId().toString(),
                 emailTemplate.getEmailName(),
                 emailTemplate.getEmailTemplateDescription(),
                 emailTemplate.getEmailTemplateCategory(),

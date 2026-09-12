@@ -28,6 +28,10 @@ public class EmailTemplateVersion {
 
     @NotNull
     @Column(columnDefinition = "TEXT")
+    private String designJson;
+
+    @NotNull
+    @Column(columnDefinition = "TEXT")
     private String htmlContent;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -90,5 +94,13 @@ public class EmailTemplateVersion {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getDesignJson() {
+        return designJson;
+    }
+
+    public void setDesignJson(String designJson) {
+        this.designJson = designJson;
     }
 }

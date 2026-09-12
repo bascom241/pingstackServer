@@ -8,7 +8,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+
 public interface EmailTemplateRepository extends JpaRepository<EmailTemplate, UUID> {
     Optional<EmailTemplate> findBySlug(String slug);
-    List<EmailTemplate> findByUser(User user);
+    List<EmailTemplate> findByCreatedBy(User user);
 }

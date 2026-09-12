@@ -4,6 +4,7 @@ import com.example.pingstack.templating.enums.EmailTemplateCategory;
 import com.example.pingstack.templating.enums.EmailTemplateStatus;
 
 public class EmailTemplateResponse {
+    private String templateId;
     private String name;
     private String description;
     private EmailTemplateCategory category;
@@ -13,6 +14,14 @@ public class EmailTemplateResponse {
     private String createdBy;
     private String createdAt;
     private String updatedAt;
+
+    public String getTemplateId() {
+        return templateId;
+    }
+
+    public void setTemplateId(String templateId) {
+        this.templateId = templateId;
+    }
 
     public String getName() {
         return name;
@@ -86,7 +95,8 @@ public class EmailTemplateResponse {
         this.updatedAt = updatedAt;
     }
 
-    public EmailTemplateResponse(String name, String description, EmailTemplateCategory category, String slug, EmailTemplateStatus status, Integer currentVersion, String createdBy, String createdAt, String updatedAt) {
+    public EmailTemplateResponse(String templateId, String name, String description, EmailTemplateCategory category, String slug, EmailTemplateStatus status, Integer currentVersion, String createdBy, String createdAt, String updatedAt) {
+        this.templateId = templateId;
         this.name = name;
         this.description = description;
         this.category = category;

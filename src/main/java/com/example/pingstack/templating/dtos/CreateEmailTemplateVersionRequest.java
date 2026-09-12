@@ -7,7 +7,10 @@ public record CreateEmailTemplateVersionRequest(
         String subject,
 
         @NotBlank
-        String htmlContent
+        String htmlContent,
+
+        @NotBlank
+        String designJson
 ) {
 
 }
