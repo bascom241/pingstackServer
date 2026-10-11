@@ -2,6 +2,7 @@ package com.example.pingstack.exceptions;
 
 import com.example.pingstack.ErrorMessage.ErrorMessage;
 import com.example.pingstack.exceptions.auth.UserAlreadyExistException;
+import com.example.pingstack.exceptions.expiration.TokenExpiredException;
 import com.example.pingstack.exceptions.notfound.ResourceNotFoundException;
 import com.example.pingstack.exceptions.unauthorized.AccessDeniedException;
 import org.springframework.http.HttpStatus;
@@ -54,6 +55,15 @@ public class GlobalExceptionHandler {
                 LocalTime.now()
         );
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorMessage);
+    }
+    @ExceptionHandler(TokenExpiredException.class)
+    public ResponseEntity<ErrorMessage> handleTokenExpiredException(TokenExpiredException tokenExpiredException){
+        ErrorMessage errorMessage = new ErrorMessage(
+                HttpStatus.BAD_REQUEST.value(),
+                tokenExpiredException.getMessage(),
+                LocalTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
     }
 
 

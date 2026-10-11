@@ -4,6 +4,7 @@ package com.example.pingstack.templating.model;
 import com.example.pingstack.auth.model.User;
 import com.example.pingstack.templating.enums.EmailTemplateCategory;
 import com.example.pingstack.templating.enums.EmailTemplateStatus;
+import com.example.pingstack.templating.enums.TemplateType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 
@@ -33,6 +34,18 @@ public class EmailTemplate {
         private String slug;
 
         @NotNull
+        @Enumerated(EnumType.STRING)
+        private TemplateType templateType = TemplateType.USER;
+
+    public TemplateType getTemplateType() {
+        return templateType;
+    }
+
+    public void setTemplateType(TemplateType templateType) {
+        this.templateType = templateType;
+    }
+
+    @NotNull
         private String emailTemplateDescription;
 
         @NotNull
@@ -43,7 +56,7 @@ public class EmailTemplate {
         private Integer currentVersion = 1;
 
         @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "created_by", nullable = false)
+        @JoinColumn(name = "created_by")
         private User createdBy;
 
         private LocalDateTime createdAt = LocalDateTime.now();

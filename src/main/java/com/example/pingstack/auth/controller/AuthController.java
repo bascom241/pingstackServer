@@ -36,4 +36,16 @@ public class AuthController {
         LoginResponseDto data = userDetailServiceImplementation.refreshToken(refreshTokenRequest);
         return ResponseEntity.status(HttpStatus.OK).body(data);
     }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequestDto forgotPasswordRequestDto){
+        userDetailServiceImplementation.forgotPassword(forgotPasswordRequestDto);
+        return ResponseEntity.status(HttpStatus.OK).body("Email Sent successfully");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest resetPasswordRequest){
+        userDetailServiceImplementation.resetPassword(resetPasswordRequest);
+        return ResponseEntity.status(HttpStatus.OK).body("Password reset successfully");
+    }
 }

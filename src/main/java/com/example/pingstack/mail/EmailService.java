@@ -10,6 +10,7 @@ import brevoModel.SendSmtpEmailSender;
 import brevoModel.SendSmtpEmailTo;
 import com.example.pingstack.auth.model.User;
 import jakarta.annotation.PostConstruct;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
@@ -23,7 +24,8 @@ public class EmailService {
     @Value("${brevo.api.key}")
     private String apiKey;
 
-
+    @Autowired
+    private HtmlContent htmlContent;
 
 
     @PostConstruct
@@ -32,6 +34,16 @@ public class EmailService {
         ApiClient defaultClient = Configuration.getDefaultApiClient();
         ApiKeyAuth apiKeyAuth = (ApiKeyAuth) defaultClient.getAuthentication("api-key");
         apiKeyAuth.setApiKey(apiKey);
+    }
+
+
+    private static @NonNull SendSmtpEmail getSendSmtpEmail(User user, SenderRequestData senderRequestData) {
+        SendSmtpEmail sendSmtpEmail = new SendSmtpEmail();
+        sendSmtpEmail.setSender(senderRequestData.getSendSmtpEmailSender());
+        sendSmtpEmail.setTo(Collections.singletonList(senderRequestData.getSendSmtpEmailTo()));
+        sendSmtpEmail.setSubject(senderRequestData.getSubject());
+        sendSmtpEmail.setHtmlContent(senderRequestData.getHtmlContent());
+        return sendSmtpEmail;
     }
 
     @Async
@@ -48,20 +60,21 @@ public class EmailService {
         toRecipient.setEmail(user.getEmail());
         toRecipient.setName(user.getFirstName());
 
+        //2b. Build the subject
+        String emailSubject = "Action Required: Complete your Pingstack Wallet Setup";
+
+        // 3A build the email content
+        SenderRequestData senderRequestDataToSend = new SenderRequestData(
+                sender,
+                toRecipient,
+                emailSubject,
+                HtmlContent.walletReminderHtmlContent(user)
+
+        );
+
+
         // 3. Compose Email Content
-        SendSmtpEmail sendSmtpEmail = new SendSmtpEmail();
-        sendSmtpEmail.setSender(sender);
-        sendSmtpEmail.setTo(Collections.singletonList(toRecipient));
-        sendSmtpEmail.setSubject("Action Required: Complete your Pingstack Wallet Setup");
-
-        String htmlContent = "<h3>Hello " + user.getFirstName() + ",</h3>"
-                + "<p>Your account registration was successful! However, we encountered a brief hiccup "
-                + "while initializing your payment wallet.</p>"
-                + "<p>Don't worry, your data is safe. Please log into your dashboard and click "
-                + "<strong>'Retry Wallet Setup'</strong> to complete your account setup manually.</p>"
-                + "<br/><p>Best regards,<br/>The Pingstack Team</p>";
-
-        sendSmtpEmail.setHtmlContent(htmlContent);
+        SendSmtpEmail sendSmtpEmail = getSendSmtpEmail(user, senderRequestDataToSend);
 
         try {
             apiInstance.sendTransacEmail(sendSmtpEmail);
@@ -71,6 +84,45 @@ public class EmailService {
             System.err.println("Exception when calling TransactionalEmailsApi over Brevo: " + e.getMessage());
         }
     }
+
+
+
+    @Async
+    public void sendForgotPassword (User user, String resetUrl, String token){
+        TransactionalEmailsApi apiInstance = new TransactionalEmailsApi();
+        
+        SendSmtpEmailSender sender = new SendSmtpEmailSender();
+        sender.setEmail("abdulbasitabdulwahab21@gmail.com");
+        sender.setName("pingstack");
+        
+        SendSmtpEmailTo toRecipient = new SendSmtpEmailTo();
+        toRecipient.setEmail(user.getEmail());
+        toRecipient.setName(user.getFirstName());
+
+        String emailSubject = "Forgot your password? We’ve got you covered.";
+
+        SenderRequestData senderRequestDataToSend = new SenderRequestData(
+                sender,
+                toRecipient,
+                emailSubject,
+                htmlContent.forgotPassword(user,resetUrl, token )
+        );
+        SendSmtpEmail sendSmtpEmail = getSendSmtpEmail(user, senderRequestDataToSend);
+        try {
+            apiInstance.sendTransacEmail(sendSmtpEmail);
+        }  catch (Exception e) {
+            // Log if Brevo itself fails
+            System.err.println("Exception when calling TransactionalEmailsApi over Brevo: " + e.getMessage());
+        }
+        
+    }
+
+
+
+
+
+
+
 
 
 

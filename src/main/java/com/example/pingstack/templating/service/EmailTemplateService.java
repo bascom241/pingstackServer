@@ -6,6 +6,7 @@ import com.example.pingstack.templating.dtos.CreateTemplateRequestDto;
 import com.example.pingstack.templating.dtos.EmailTemplateResponse;
 import com.example.pingstack.templating.dtos.EmailTemplateVersionRequest;
 import com.example.pingstack.templating.dtos.EmailTemplateVersionResponse;
+import com.example.pingstack.templating.enums.TemplateType;
 import com.example.pingstack.templating.mapper.EmailTemplateMapper;
 import com.example.pingstack.templating.mapper.EmailTemplateVersionMapper;
 import com.example.pingstack.templating.model.EmailTemplate;
@@ -52,6 +53,7 @@ public class EmailTemplateService {
         }
         EmailTemplate emailTemplate = emailTemplateMapper.toEntity(createTemplateRequestDto);
         emailTemplate.setCreatedBy(user);
+        emailTemplate.setTemplateType(TemplateType.USER);
         emailTemplate.setSlug(createdSlug);
         emailTemplate.setCurrentVersion(1);
         emailTemplate.setUpdatedAt(LocalDateTime.now());
@@ -76,35 +78,86 @@ public class EmailTemplateService {
         return emailTemplates.stream().map(emailTemplate -> emailTemplateMapper.toResponse(emailTemplate)).toList();
     }
 
-    public EmailTemplateVersionResponse editTemplateVersion (UUID templateId, String authHeader, EmailTemplateVersionRequest emailTemplateVersionRequest){
-        User user = extractUserInfoFromAuthHeader.extractUserInfo(authHeader);
-        EmailTemplate emailTemplate = emailTemplateRepository.findById(templateId).orElseThrow(() -> new RuntimeException("Email Template not found "));
-        boolean isOwned = emailTemplate.getCreatedBy().equals(user);
-        if(!isOwned){
-            throw new RuntimeException("Email Template does not belong to this user");
+
+    public EmailTemplateVersionResponse editTemplateVersion(
+            UUID templateId,
+            String authHeader,
+            EmailTemplateVersionRequest request
+    ) {
+        User user = extractUserInfoFromAuthHeader
+                .extractUserInfo(authHeader);
+        EmailTemplate emailTemplate = emailTemplateRepository
+                .findById(templateId)
+                .orElseThrow(() ->
+                        new RuntimeException("Email Template not found")
+                );
+        if (!emailTemplate.getCreatedBy().equals(user)) {
+            throw new RuntimeException(
+                    "Email Template does not belong to this user"
+            );
         }
-        EmailTemplateVersion emailTemplateVersion = emailTemplateVersionRepository.findByEmailTemplate(emailTemplate).orElseThrow(() -> new RuntimeException("Template Version not found"));
-        Integer currentVersion = emailTemplateVersion.getVersion() + 1;
-        emailTemplateVersion.setVersion(currentVersion);
-        if(emailTemplateVersionRequest.getDesignJson() != null  || emailTemplateVersionRequest.getDesignJson().isEmpty()) emailTemplateVersion.setDesignJson(emailTemplateVersionRequest.getDesignJson());
-        if(emailTemplateVersionRequest.getHtmlContent() != null || emailTemplateVersionRequest.getHtmlContent().isEmpty()) emailTemplateVersion.setHtmlContent(emailTemplateVersionRequest.getHtmlContent());
-        if(emailTemplateVersionRequest.getSubject() != null || emailTemplateVersionRequest.getSubject().isEmpty())   emailTemplateVersion.setSubject(emailTemplateVersionRequest.getSubject());
-        EmailTemplateVersion savedEmailTemplateVersion = emailTemplateVersionMapper.toEntity(emailTemplateVersionRequest);
-        EmailTemplateVersion emailTemplateVersion1 = emailTemplateVersionRepository.save(savedEmailTemplateVersion);
-        return emailTemplateVersionMapper.toResponse(emailTemplateVersion1);
+        Integer nextVersion =
+                emailTemplate.getCurrentVersion() + 1;
+
+        EmailTemplateVersion newVersion =
+                new EmailTemplateVersion();
+        newVersion.setVersion(nextVersion);
+        newVersion.setSubject(request.getSubject());
+        newVersion.setHtmlContent(request.getHtmlContent());
+        newVersion.setDesignJson(request.getDesignJson());
+        newVersion.setCreatedBy(user);
+        newVersion.setCreatedAt(LocalDateTime.now());
+        newVersion.setEmailTemplate(emailTemplate);
+        EmailTemplateVersion savedVersion =
+                emailTemplateVersionRepository.save(newVersion);
+        emailTemplate.setCurrentVersion(nextVersion);
+        emailTemplate.setUpdatedAt(LocalDateTime.now());
+        emailTemplateRepository.save(emailTemplate);
+        return emailTemplateVersionMapper.toResponse(savedVersion);
     }
 
-    public EmailTemplateVersionResponse getSingleEmailTemplate (UUID templateId, String authHeader ){
-        User user = extractUserInfoFromAuthHeader.extractUserInfo(authHeader);
-        EmailTemplate emailTemplate = emailTemplateRepository.findById(templateId).orElseThrow(() -> new RuntimeException("Email Template not found "));
-        boolean isOwned = emailTemplate.getCreatedBy().equals(user);
-        if(!isOwned){
-            throw new RuntimeException("Email Template does not belong to this user");
+
+    public EmailTemplateVersionResponse getSingleEmailTemplate(
+            UUID templateId,
+            String authHeader
+    ) {
+        User user =
+                extractUserInfoFromAuthHeader.extractUserInfo(authHeader);
+
+        EmailTemplate emailTemplate =
+                emailTemplateRepository.findById(templateId)
+                        .orElseThrow(() ->
+                                new RuntimeException("Email Template not found")
+                        );
+
+        boolean isOwned =
+                emailTemplate.getCreatedBy().equals(user);
+
+        if (!isOwned) {
+            throw new RuntimeException(
+                    "Email Template does not belong to this user"
+            );
         }
 
-        EmailTemplateVersion emailTemplateVersion = emailTemplateVersionRepository.findByEmailTemplate(emailTemplate).orElseThrow(() -> new RuntimeException("Template Version not found"));
-        return emailTemplateVersionMapper.toResponse(emailTemplateVersion);
+        EmailTemplateVersion emailTemplateVersion =
+                emailTemplateVersionRepository
+                        .findByEmailTemplateAndVersion(
+                                emailTemplate,
+                                emailTemplate.getCurrentVersion()
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Current template version not found"
+                                )
+                        );
+
+        return emailTemplateVersionMapper.toResponse(
+                emailTemplateVersion
+        );
     }
+
+
+
 
 
 
