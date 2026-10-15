@@ -27,8 +27,8 @@ public class EmailCampaignController {
 
     @PostMapping
     public ResponseEntity<CreateEmailCampaignResponse> createCampaign (@RequestHeader("Authorization") String authHeader, @Valid @RequestBody CreateEmailCampaignRequest createEmailCampaignRequest){
-        System.out.println(createEmailCampaignRequest.getRecipientRequests());
-        System.out.println(createEmailCampaignRequest.getName());
+        System.out.println("Name: " + createEmailCampaignRequest.getName());
+        System.out.println("Subject: " + createEmailCampaignRequest.getSubject());
       CreateEmailCampaignResponse data = brevoCampaignService.create(authHeader,createEmailCampaignRequest);
       return ResponseEntity.status(HttpStatus.CREATED).body(data);
    }

@@ -61,6 +61,9 @@ public class BrevoCampaignService implements EmailCampaignService {
     public CreateEmailCampaignResponse create(String authHeader, CreateEmailCampaignRequest createEmailCampaignRequest) {
 
 
+        System.out.println(createEmailCampaignRequest.getName());
+        System.out.println(createEmailCampaignRequest.getSubject());
+
         User user = extractUserInfoFromAuthHeader.extractUserInfo(authHeader);
         EmailTemplate emailTemplate = emailTemplateRepository.findById(UUID.fromString(createEmailCampaignRequest.getTemplateId())).orElseThrow(() -> new ResourceNotFoundException("Email Template not found"));
         if(!emailTemplate.getCreatedBy().equals(user)) throw new AccessDeniedException("You are not authorized");
