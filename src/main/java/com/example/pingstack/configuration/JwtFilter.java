@@ -22,6 +22,16 @@ public class JwtFilter extends OncePerRequestFilter {
     private JwtService jwtService;
 
     @Override
+    protected boolean shouldNotFilter(
+            HttpServletRequest request
+    ) {
+        return "/api/v1/webhooks/brevo".equals(
+                request.getServletPath()
+        );
+    }
+
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         System.out.println("JWT FILTER HIT: " + request.getRequestURI());
 
