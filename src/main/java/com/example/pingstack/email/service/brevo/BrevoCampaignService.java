@@ -169,8 +169,6 @@ public class BrevoCampaignService implements EmailCampaignService {
     }
 
     // CAMPAIGN QUEUE
-
-
     @Override
     public void triggerProcessing(String campaignId, String authHeader) {
 
@@ -199,6 +197,12 @@ public class BrevoCampaignService implements EmailCampaignService {
     }
 
 
+    public CampaignResponse getSingleCampaign (String campaignId) {
+        EmailCampaign data = emailCampaignRepository.findById(UUID.fromString(campaignId)).orElseThrow(()-> new ResourceNotFoundException("Campaign not found"));
+        return emailCampaignMapper.toResponseDto(data);
+    }
+
+
     // Create Add Recipients end point
 
 
@@ -211,13 +215,27 @@ public class BrevoCampaignService implements EmailCampaignService {
         if(!emailCampaign.getUser().equals(user)){
             throw new AccessDeniedException("You are not authorized to this action");
         }
-        List<EmailRecipient> recipients = emailRecipientRequests.stream().map(emailRecipientRequest -> {
+
+        List<EmailRecipient> recipients = emailRecipientRequests.stream()
+                .filter(
+                        emailRecipientRequest -> !emailRecipientRepository.existsByCampaign_IdAndEmail(emailCampaign.getId(), emailRecipientRequest.getEmail())
+                )
+                .map(emailRecipientRequest -> {
+
             EmailRecipient savedRecipient = emailRecipientMapper.toModel(emailRecipientRequest);
             savedRecipient.setStatus(RecipientStatus.PENDING);
             savedRecipient.setCampaign(emailCampaign);
+            int totalRecipientBefore = emailCampaign.getTotalRecipients();
+            emailCampaign.setTotalRecipients(totalRecipientBefore + emailRecipientRequests.size());
+
             return savedRecipient;
         }).toList();
         emailRecipientRepository.saveAll(recipients);
+    }
+
+
+    public void uploadRecipientViaCSV(){
+
     }
 
 

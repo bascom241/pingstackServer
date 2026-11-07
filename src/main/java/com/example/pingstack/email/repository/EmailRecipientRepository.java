@@ -15,6 +15,7 @@ import java.util.UUID;
 public interface EmailRecipientRepository extends JpaRepository<EmailRecipient, UUID> {
     Page<EmailRecipient> findByCampaignAndStatus(EmailCampaign emailCampaign, RecipientStatus recipientStatus, Pageable pageable);
     Optional<EmailRecipient> findByProviderMessageId(String providerMessageId);
-
+    Optional<EmailRecipient> findByEmail(String email);
+    boolean existsByCampaign_IdAndEmail(UUID campaignId, String email);
 
 }

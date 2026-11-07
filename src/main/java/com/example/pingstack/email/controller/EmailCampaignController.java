@@ -42,6 +42,12 @@ public class EmailCampaignController {
    }
 
 
+   @GetMapping("/{campaignId}")
+   public ResponseEntity<CampaignResponse> getSingleCampaign(@PathVariable String campaignId){
+            CampaignResponse result = brevoCampaignService.getSingleCampaign(campaignId);
+            return ResponseEntity.status(HttpStatus.OK).body(result);
+   }
+
     @PutMapping("/{campaignId}/process")
     public ResponseEntity<String> processCampaign(
             @RequestHeader("Authorization") String authHeader,
@@ -56,8 +62,8 @@ public class EmailCampaignController {
 
 
     @PutMapping("/{campaignId}/add-recipient")
-    public ResponseEntity<String> addRecipients (@RequestHeader("Authorization") String authHeader, @PathVariable String campaignId, @RequestBody List<EmailRecipientRequest> emailRecipientRequests){
-            brevoCampaignService.addRecipientToCampaign(authHeader,campaignId,emailRecipientRequests);
+    public ResponseEntity<String> addRecipients (@RequestHeader("Authorization") String authHeader, @PathVariable String campaignId, @RequestBody List<EmailRecipientRequest> recipient){
+            brevoCampaignService.addRecipientToCampaign(authHeader,campaignId,recipient);
             return ResponseEntity.status(HttpStatus.OK).body("Recipient added to campaign successfully");
    }
 
